@@ -89,18 +89,32 @@ var Web_Check = function(){
 			
 		},
 		move_item : function(obj){ //移动审批意见列表中的审批意见
-			var pre = obj.parentNode.parentNode.parentNode.previousSibling.previousSibling;
-			if(pre.className=="title"){
+			if(obj.parentNode.parentNode.parentNode.previousSibling.previousSibling.className=="title"){
 				alert("已经到达顶点了！");
 				return;
 			}
-			var cur = obj.parentNode.parentNode.parentNode;
-			var temp = cur.innerHTML;
-			cur.innerHTML = pre.innerHTML;
-			pre.innerHTML = temp;
-			pre.childNodes[1].childNodes[1].childNodes[1].childNodes[1].checked=true;
-			pre.style.background='#eff6ff';
-			pre.style.border='1px solid #dadada';
+			
+			var nodes = obj.parentNode.parentNode.parentNode.parentNode.childNodes;
+			var postnodes = new Array();
+			var index=0;
+			for(var i=2;i<nodes.length;i++){
+				if(nodes[i].nodeType==1){
+					postnodes[index++] = nodes[i];
+				}
+			}
+
+			for(var i=0;i<postnodes.length;i++){
+				if(obj.parentNode.parentNode.parentNode==postnodes[i]){
+				   obj.parentNode.parentNode.parentNode.style.background='#FFFFFF';
+				   obj.parentNode.parentNode.parentNode.style.border='1px solid #FFFFFF';
+					var temp = obj.parentNode.parentNode.parentNode.innerHTML;
+					obj.parentNode.parentNode.parentNode.innerHTML = postnodes[i-1].innerHTML;
+					postnodes[i-1].innerHTML = temp;
+					postnodes[i-1].style.background='#eff6ff';
+					postnodes[i-1].style.border='1px solid #dadada';
+					postnodes[i-1].childNodes[1].childNodes[1].childNodes[1].childNodes[1].checked = true;			
+				}
+			}
 		},
 		onmouseover_item : function(obj){ //鼠标滑过事件
 			obj.childNodes[1].childNodes[1].childNodes[1].childNodes[1].style.visibility='visible';
@@ -118,12 +132,29 @@ var Web_Check = function(){
 			}
 		},
 		onblur_textareaitem : function(obj){ //编辑审批意见列表中的审批信息
-			
-			if(TransferString(obj.value).length==0){
+			var value = TransferString(obj.value);
+			if(value.length==0){
 				alert("审批意见不能为空！");
 				obj.value="";
 				obj.focus();
 				return ;
+			}
+
+			var listtext = obj.parentNode.parentNode.parentNode.parentNode.innerText;
+			var str = TransferString(listtext);
+			var arr = str.split(",");
+			var arrs = new Array();
+			var index=0;
+			for(var i=0; i<arr.length;i++){
+				if(arr[i].length==0) continue;
+				arrs[index++] = arr[i];
+			}
+			for(var i=1; i<arrs.length;i++){
+				if(arrs[i]==value){
+					alert("列表中已经存在该审批意见，请检查！");
+					obj.focus();
+					return;
+				}
 			}
 			
 			obj.style.display='none';
@@ -136,12 +167,16 @@ var Web_Check = function(){
 		},
 		del_items : function(name){ //移除指定的审批意见事件
 			var tags = document.getElementsByName(name);
+			var is = true;
+			var parent = tags[0].parentNode.parentNode.parentNode.parentNode.parentNode;
 			for(var i=0;i<tags.length;i++){
 				if(tags[i].checked==true){
-					tags[i].parentNode.parentNode.parentNode.parentNode.parentNode.removeChild(
-					tags[i].parentNode.parentNode.parentNode.parentNode); 
-					break;
+					is = false;
+					parent.removeChild(tags[i].parentNode.parentNode.parentNode.parentNode);
 				}
+			}
+			if(is){
+				alert("请选择要删除的项目");
 			}
 		},
 		sel_check_text : function(src,des){ //选择审批意见按钮事件
@@ -160,9 +195,14 @@ var Web_Check = function(){
 			var listtext = list.innerText;
 			if(text.length==0) return;
 			var str = TransferString(listtext);
-			var arrs = str.split(",");
-			for(var i=0; i<arrs.length;i++){
-				if(arrs[i].length==0) continue;
+			var arr = str.split(",");
+			var arrs = new Array();
+			var index=0;
+			for(var i=0; i<arr.length;i++){
+				if(arr[i].length==0) continue;
+				arrs[index++] = arr[i];
+			}
+			for(var i=1; i<arrs.length;i++){
 				if(arrs[i]==text){
 					alert("列表中已经存在该审批意见，请检查！");
 					return;
@@ -210,7 +250,6 @@ var Web_Check = function(){
 			}
 		},
 		edit_check_text : function(obj){ //编辑按钮事件
-
 			obj.parentNode.parentNode.parentNode.style.height=(obj.parentNode.parentNode.clientWidth/2)+'px';
 			var oldText = obj.parentNode.parentNode.childNodes[1].childNodes[1].childNodes[3].innerText;
 			obj.parentNode.parentNode.childNodes[1].childNodes[1].childNodes[3].style.display='none';
