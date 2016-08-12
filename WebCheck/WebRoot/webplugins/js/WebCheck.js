@@ -16,28 +16,30 @@
  ********************************************************************************************/
 var Web_Check = function(){
 	var model_text = function(text){
-	return "<div class='list' onmouseover='Web_Check.onmouseover_item(this)' onmouseout='Web_Check.onmouseout_item(this)'>"
-			+"	<ul>"
-			+"		<li class='float_l'>"
-			+"			<div>"
-			+"				<input type='checkbox' name='check_info' onclick='Web_Check.sel_item(this)'>"
-			+"				<span>"+text+"</span>"
-			+"			</div>"
-			+"		</li>"
-			+"		<li class='float_r'>"
-			+"			<img src='webplugins/images/edit.png' height='14px' onclick='Web_Check.edit_check_text(this)'>"
-			+"			<img src='webplugins/images/up.png' height='14px' onclick='Web_Check.move_item(this)'>"
-			+"		</li>"
-			+"		<li><textarea onblur='Web_Check.onblur_textareaitem(this)'></textarea></li>"
-			+"	</ul>"
-			+"</div>";
+
+	   return "<div class='list' onmouseover='Web_Check.onmouseover_item(this)' onmouseout='Web_Check.onmouseout_item(this)'>"
+			 +"	<ul>"
+			 +"		<li class='float_l'>"
+			 +"			<div>"
+			 +"				<input type='checkbox' name='check_info' onclick='Web_Check.sel_item(this)'>"
+			 +"				<span>"+text+"</span>"
+			 +"			</div>"
+			 +"		</li>"
+			 +"		<li class='float_r'>"
+			 +"			<img src='webplugins/images/edit.png' height='14px' onclick='Web_Check.edit_check_text(this)'>"
+			 +"			<img src='webplugins/images/up.png' height='14px' onclick='Web_Check.move_item(this)'>"
+			 +"		</li>"
+			 +"		<li><textarea onblur='Web_Check.onblur_textareaitem(this)'></textarea></li>"
+			 +"	</ul>"
+			 +"</div>";
 	};
 	function TransferString(content){  
 		var string = content;  
 		try{  
-			string=string.replace(/\r\n/g,",");
-			string=string.replace(/\n/g,",");
+			string=string.replace(/\r\n/g,"");
+			string=string.replace(/\n/g,"");
 			string=string.replace(/\s/g,"");
+			string=string.replace(/[\r\n]/g,"");
 		}catch(e) {  
 			alert(e.message);  
 		}  
@@ -89,7 +91,8 @@ var Web_Check = function(){
 			
 		},
 		move_item : function(obj){ //移动审批意见列表中的审批意见
-			if(obj.parentNode.parentNode.parentNode.previousSibling.previousSibling.className=="title"){
+			//alert(obj.parentNode.parentNode.parentNode.parentNode.innerHTML);
+			if(obj.parentNode.parentNode.parentNode.previousSibling.className=="title"){
 				alert("已经到达顶点了！");
 				return;
 			}
@@ -97,22 +100,27 @@ var Web_Check = function(){
 			var nodes = obj.parentNode.parentNode.parentNode.parentNode.childNodes;
 			var postnodes = new Array();
 			var index=0;
-			for(var i=2;i<nodes.length;i++){
+			for(var i=1;i<nodes.length;i++){
 				if(nodes[i].nodeType==1){
 					postnodes[index++] = nodes[i];
 				}
 			}
 
 			for(var i=0;i<postnodes.length;i++){
-				if(obj.parentNode.parentNode.parentNode==postnodes[i]){
-				   obj.parentNode.parentNode.parentNode.style.background='#FFFFFF';
-				   obj.parentNode.parentNode.parentNode.style.border='1px solid #FFFFFF';
-					var temp = obj.parentNode.parentNode.parentNode.innerHTML;
-					obj.parentNode.parentNode.parentNode.innerHTML = postnodes[i-1].innerHTML;
-					postnodes[i-1].innerHTML = temp;
-					postnodes[i-1].style.background='#eff6ff';
-					postnodes[i-1].style.border='1px solid #dadada';
-					postnodes[i-1].childNodes[1].childNodes[1].childNodes[1].childNodes[1].checked = true;			
+				try{
+					if(obj.parentNode.parentNode.parentNode==postnodes[i]&&i>0){
+						obj.parentNode.parentNode.parentNode.style.background='#FFFFFF';
+						obj.parentNode.parentNode.parentNode.style.border='1px solid #FFFFFF';
+						var temp = obj.parentNode.parentNode.parentNode.innerHTML;
+						
+						obj.parentNode.parentNode.parentNode.innerHTML = postnodes[i-1].innerHTML;
+						postnodes[i-1].innerHTML = temp;
+						postnodes[i-1].style.background='#eff6ff';
+						postnodes[i-1].style.border='1px solid #dadada';
+						postnodes[i-1].childNodes[1].childNodes[1].childNodes[1].childNodes[1].checked = true;			
+					}
+				}catch(e){
+					console.log(e);
 				}
 			}
 		},
@@ -140,15 +148,26 @@ var Web_Check = function(){
 				return ;
 			}
 
-			var listtext = obj.parentNode.parentNode.parentNode.parentNode.innerText;
-			var str = TransferString(listtext);
-			var arr = str.split(",");
+			//开始获取除自身所处节点外的其他节点内容 
+			var childs = obj.parentNode.parentNode.parentNode.parentNode.childNodes;
+			var len = childs.length;
+			var listtext = "";
+			for(var i=0;i<len;i++){
+				if(childs[i].nodeType==1 && obj.parentNode.parentNode.parentNode!=childs[i]){
+					listtext +=childs[i].innerText +"-";
+				}
+			}
+			
+			//开始过滤空字符串
+			var arr = TransferString(listtext).split("-");;
 			var arrs = new Array();
 			var index=0;
-			for(var i=0; i<arr.length;i++){
+			len = arr.length;
+			for(var i=0; i<len;i++){
 				if(arr[i].length==0) continue;
 				arrs[index++] = arr[i];
 			}
+		
 			for(var i=1; i<arrs.length;i++){
 				if(arrs[i]==value){
 					alert("列表中已经存在该审批意见，请检查！");
@@ -191,26 +210,29 @@ var Web_Check = function(){
 		},
 		add_check_text : function(src,des,check){ //添加审批意见按钮事件
 			var text = document.getElementById(src).value;
-			var list = document.getElementById(des);
-			var listtext = list.innerText;
+			text = TransferString(text);
+
+			var childs = document.getElementById(des).childNodes;
+			var len = childs.length;
+			var listtext = "";
+			for(var i=0;i<len;i++){
+				if(childs[i].nodeType==1){
+					listtext +=childs[i].innerText + "-";
+				}
+			}
+
 			if(text.length==0) return;
 			var str = TransferString(listtext);
-			var arr = str.split(",");
-			var arrs = new Array();
-			var index=0;
-			for(var i=0; i<arr.length;i++){
-				if(arr[i].length==0) continue;
-				arrs[index++] = arr[i];
-			}
-			for(var i=1; i<arrs.length;i++){
-				if(arrs[i]==text){
+			var arr = str.split("-");
+			for(var i=1; i<arr.length;i++){
+				if(arr[i]==text){
 					alert("列表中已经存在该审批意见，请检查！");
 					return;
 				}
 			}
 			
-			var new_content = list.innerHTML + model_text(text);
-			list.innerHTML = new_content;
+			var new_content = document.getElementById(des).innerHTML + model_text(text);
+			document.getElementById(des).innerHTML = new_content;
 
 			var tags = document.getElementsByName(check);
 			tags[tags.length-1].checked=true;
@@ -253,10 +275,12 @@ var Web_Check = function(){
 			obj.parentNode.parentNode.parentNode.style.height=(obj.parentNode.parentNode.clientWidth/2)+'px';
 			var oldText = obj.parentNode.parentNode.childNodes[1].childNodes[1].childNodes[3].innerText;
 			obj.parentNode.parentNode.childNodes[1].childNodes[1].childNodes[3].style.display='none';
+
 			var text_area = obj.parentNode.parentNode.childNodes[5].childNodes[0];
 			text_area.style.display='block';
 			text_area.style.width = (obj.parentNode.parentNode.clientWidth-60) + "px";
 			text_area.style.height = (obj.parentNode.parentNode.clientWidth / 2 - 5) + "px";
+			obj.parentNode.parentNode.childNodes[1].childNodes[1].childNodes[3].innerText="";
 			text_area.value=oldText;
 			text_area.focus();
 		}

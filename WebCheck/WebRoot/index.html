@@ -17,8 +17,12 @@
 	$Web_Plugins('ds').DouSelect({
 		width:700,
 		height:300,
-		values:["R","T","Y","U"],
-		contents:["不同意","同意","已阅","送下一审批人"]
+		url:'read.txt',
+		type:'get',
+		isync:true,
+		data:{'A':'S'},
+		remote:false,//true 调用Ajax请求远程数据，本地指定的JSON字符串将不起作用
+		json:"{\"同意\":\"Y\",\"不同意\":\"N\",\"已阅\":\"Y\",\"已M阅\":\"M\",\"已O阅\":\"O\",\"你好啊\":\"P\"}"
 	});
  </script>
 </html>

@@ -26,6 +26,97 @@ function $Web_Plugins(id){
 		return;
 	}
 	var div = document.getElementById(id);
+	/***********************************************
+	 *
+	 * Ajax远程请求审批意见列表数据
+	 *
+	 ***********************************************/
+	var Ajax = function(options){
+		var XMLHttpReq;
+		try {  
+			XMLHttpReq = new ActiveXObject("Msxml2.XMLHTTP");//IE高版本创建XMLHTTP  
+		}catch(e) { 
+			console.log(e);
+			try {  
+				XMLHttpReq = new ActiveXObject("Microsoft.XMLHTTP");//IE低版本创建XMLHTTP  
+			}catch(e) { 
+				console.log(e);
+				XMLHttpReq = new XMLHttpRequest();//兼容非IE浏览器，直接创建XMLHTTP对象  
+			}  
+		}  
+		XMLHttpReq.open(options.type, options.url, options.isync,options.init,options.custom);  
+		XMLHttpReq.onreadystatechange = function(){ //指定响应函数 
+			if (XMLHttpReq.readyState == 4) { 
+				if (XMLHttpReq.status == 200) {
+					options.init(options,XMLHttpReq.responseText);
+				}
+			}
+		}; 
+		
+		if(options.type.toString().toLocaleUpperCase()=="GET"){
+			XMLHttpReq.send(null);  
+		}else{
+			if(typeof(options.data)=='undefined'){
+				options.data = {};
+			}
+			// 转成post需要的字符串. 
+			options.data = (function(obj){ 
+				var str = "";  
+				for(var key in obj){  
+					str += key + "=" + obj[key] + "&"  
+				}  
+				return str;  
+			})(options.data);  
+			XMLHttpReq.send(options.data);
+		}
+	}
+
+	//Ajax请求初始化模板
+	function ajax_model(options,t){
+		var div = document.getElementById("check_text_list");
+		options.json = t;
+		div.innerHTML = init_model(options);	
+	}
+	
+	//初始化条目模板
+	function init_model(options){
+		
+		var json = JSON.parse(options.json);
+		
+		var temp =  "<div class='title'>" +
+					"	<ul>" +
+					"		<li class='float_l'>" +
+					"			<div>" +
+					"				<input type='checkbox' disabled='true'>" +
+					"				<span>"+options.right_list_title+"</span>" +
+					"			</div>" +
+					"		</li>" +
+					"		<li class='float_r' >" +
+					"			<img src='webplugins/images/edit.png' height='"+options.e_height+"px'>" +
+					"			<img src='webplugins/images/up.png' height='"+options.e_height+"px'>" +
+					"		</li>" +
+					"	</ul>" +
+					"</div>";
+		for(var key in json){  
+			temp = temp +"<div class='list' onmouseover='Web_Check.onmouseover_item(this)' onmouseout='Web_Check.onmouseout_item(this)'>" +
+						 "	<ul>" +
+						 "		<li class='float_l'>" +
+						 "			<div>" +
+						 "				<input type='checkbox' name='check_info' value='"+json[key]+"' onclick='Web_Check.sel_item(this)'>" +
+						 "				<span>"+key+"</span>" +
+						 "			</div>" +
+						 "		</li>" +
+						 "		<li class='float_r'>" +
+						 "			<img src='webplugins/images/edit.png' height='"+options.e_height+"px' onclick='Web_Check.edit_check_text(this)'>" +
+						 "			<img src='webplugins/images/up.png' height='"+options.e_height+"px' onclick='Web_Check.move_item(this)'>" +
+						 "		</li>" +
+						 "		<li><textarea onblur='Web_Check.onblur_textareaitem(this)'></textarea></li>" +
+						 "	</ul>" +
+						 "</div>";
+		}
+
+		return temp;
+	}
 
 	return{ 
 		
@@ -54,36 +145,15 @@ function $Web_Plugins(id){
 			if(typeof(options.e_height)=='undefined'){
 				options.e_height = 14;
 			}
-			if(typeof(options.values)=='undefined'){
-				options.values = ['R','Y','Y'];
-			}
-			if(typeof(options.contents)=='undefined'){
-				options.contents = ['不同意','同意','已阅'];
-			}
-			if(options.contents.length != options.values.length){
-				console.error("Value and content of the number of different, please check！");
-				return;
-			}
-			var values = options.values;
-			var contents = options.contents;
-			var len = values.length;
-			var bodys="";
-			for(var i=0;i<len;i++){
-				bodys = bodys+"			<div class='list' onmouseover='Web_Check.onmouseover_item(this)'						onmouseout='Web_Check.onmouseout_item(this)'>" +
-						"				<ul>" +
-						"					<li class='float_l'>" +
-						"						<div>" +
-						"							<input type='checkbox' name='check_info' value='"+values[i]+"' onclick='Web_Check.sel_item(this)'>" +
-						"							<span>"+contents[i]+"</span>" +
-						"						</div>" +
-						"					</li>" +
-						"					<li class='float_r'>" +
-						"						<img src='webplugins/images/edit.png' height='"+options.e_height+"px' onclick='Web_Check.edit_check_text(this)'>" +
-						"						<img src='webplugins/images/up.png' height='"+options.e_height+"px' onclick='Web_Check.move_item(this)'>" +
-						"					</li>" +
-						"					<li><textarea onblur='Web_Check.onblur_textareaitem(this)'></textarea></li>" +
-						"				</ul>" +
-						"			</div>";
+			var html="";
+			if(options.remote){
+				if(typeof(options.type)=='undefined'){
+					options.type='get';
+				}
+				options.init = ajax_model;
+				Ajax(options);
+			}else{
+				html = init_model(options)
 			}
 
 			var temp =  "<div style='width:"+options.width+"px;'>" +
@@ -112,21 +182,9 @@ function $Web_Plugins(id){
 						"			height='15px'></span>" +
 						"		</div>" +
 						"		<div class='check_text_list' id='check_text_list' style='height:"+options.height+"px;'>" + 
-						"			<div class='title'>" +
-						"				<ul>" +
-						"					<li class='float_l'>" +
-						"						<div>" +
-						"							<input type='checkbox' disabled='true'>" +
-						"							<span>"+options.right_list_title+"</span>" +
-						"						</div>" +
-						"					</li>" +
-						"					<li class='float_r' >" +
-						"						<img src='webplugins/images/edit.png' height='"+options.e_height+"px'>" +
-						"						<img src='webplugins/images/up.png' height='"+options.e_height+"px'>" +
-						"					</li>" +
-						"				</ul>" +
-						"			</div>"
-						+ bodys +
+						
+						 html +
+						
 						"		</div>" +
 						"	</div>" +
 						"</div>";
