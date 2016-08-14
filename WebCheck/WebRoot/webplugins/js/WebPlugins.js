@@ -18,6 +18,7 @@
  * @use  $Web_Plugins("DIV的ID").DouSelect({width:,height:,values:[],contents:[],...});
  ****************************************************/
 document.write("<script language=javascript src='webplugins/js/WebCheck.js'></script>");
+document.write("<script language=javascript src='webplugins/js/WebUtils.js'></script>");
 function $Web_Plugins(id){
 		
 	if(typeof(id)=='undefined'){
